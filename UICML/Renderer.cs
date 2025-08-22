@@ -153,7 +153,7 @@ namespace PowerNite.PowerShell.Extentions
         public static Slot rootSlot = Engine.Current.WorldManager.FocusedWorld.RootSlot;
         public static Slot Render(string xml)
         {
-            var slott = rootSlot.AddSlot("UIXMLParserRoot");
+            var slott = Engine.Current.WorldManager.FocusedWorld.RootSlot.AddSlot("UIXMLParserRoot");
             if (string.IsNullOrEmpty(xml))
             {
                 var errorSlot = slott.AddSlot("xmlError").AttachComponent<TextRenderer>();
@@ -165,8 +165,8 @@ namespace PowerNite.PowerShell.Extentions
             {
                 throw new InvalidOperationException("Failed to parse XML into a Slot.");
             }
-            slot.Parent = rootSlot;
-            return slot ?? slott;
+            slot.Parent = slott;
+            return slot;
         }
     }
 }

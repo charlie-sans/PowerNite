@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Management.Automation;
 using System.Resources;
-
+using HarmonyLib;
 using Elements.Core;
 
 using FrooxEngine;
@@ -33,15 +33,18 @@ public class PowerNiteMod : ResoniteMod
     {
         Harmony harm = new Harmony("ovh.finite.PowerNite");
         harm.UnpatchAll("ovh.finite.PowerNite");
-    }
+		HotReloader.RemoveMenuOption("PowerNite", "Create PowerShell");
+		//GC.Collect();
+
+	}
 
     public static void OnHotReload(ResoniteMod modInstance)
     {
-        Harmony harm = new Harmony("ovh.finite.PowerNite");
-        harm.PatchAll();
-
+        //Harmony harm = new Harmony("ovh.finite.PowerNite");
+        //harm.PatchAll();
         Setup();
-    }
+		Msg("PowerNite Hot Reloaded");
+	}
 
     public override void OnEngineInit()
     {
@@ -51,48 +54,35 @@ public class PowerNiteMod : ResoniteMod
         HotReloader.RegisterForHotReload(this);
         Setup();
         Msg("meowMoew");
-    }
+		Debug("PowerNite OnEngineInit Complete");
+	}
 
     static void Setup()
     {
-        // Patch Harmony
-        Harmony harmony = new Harmony("ovh.finite.PowerNite");
-        harmony.PatchAll();
-        HotReloader.RegisterForHotReload(INSTANCE);
-        Msg("PowerNite Setup Complete");
-        Debug("PowerNite Setup Complete");
+		////// Patch Harmony
+		//Harmony harmony = new Harmony("ovh.finite.PowerNite");
+		//harmony.PatchAll();
+		//HotReloader.RegisterForHotReload(INSTANCE);
+		Msg("PowerNite Setup Complete");
+
         // Add the reload menu option
         AddNewMenuOption("PowerNite", "Create PowerShell", () =>
         {
             Msg("Spawn UI");
 			//var UIResource = EXT.GetResourceTextFile("BaseEditor.XML");
 			Msg("meow");
-			var slot = UIXML.Render("""
-				<canvas width="800" height="600" background="#5e294e50">
-				    <horizontal minheight="50" spacing="10" background="#222">
-				        <vertical spacing="10" padding="10" minwidth="650">
-				            <horizontal minheight="1" spacing="10" background="#222">
-				                <text color="#fff" halign="center" fontsize="20">main.ps1</text>
-				            </horizontal>
-				            <textarea minheight="300" color="#fff" background="#f0f0f0" fontsize="30" placeholder="Enter your code here..." >codeasd</textarea>
-				            <vertical spacing="10">
-				                <textarea minheight="100" color="#fff" background="#111" fontsize="30" placeholder="Console output..." >consoleasd</textarea>
-				                <input placeholder="Type here..." minheight="5" fontsize="30"></input>
-				            </vertical>
-				        </vertical>
-				        <vertical spacing="2" padtop="10" padleft="10" padright="10" padbottom="10">
-				            <button text="Run" fontsize="14" minwidth="2">Run</button>
-				            <button text="Reset" fontsize="14" minwidth="2">Reset</button>
-				            <button text="Save" fontsize="14" minwidth="2">Export</button>
-				            <button text="Help"  fontsize="14" minwidth="2">Help</button>
-				        </vertical>
-				    </horizontal>
+			Debug("meow");
+			Msg("either we hot reloaded or started the game");
+			var UIXParser = new UIXMLParser();
+			var slot = UIXParser.Render("""
+				canvas width="800" height="600" background="#5e294e50">
+				   
 				</canvas>
 				""");
 			Msg("created slot");
 			slot.Name = "PowerNite";
-			slot.Parent = Engine.Current.WorldManager.FocusedWorld.RootSlot;
 			slot.PositionInFrontOfUser(float3.Backward);
+			slot.GlobalScale = new float3(0.1f, 0.1f, 0.1f); // set the global scale to 0.1f as FrooxEngine uses 1 unit = 1 meter, and we want the canvas to be smaller.
 			Debug("Spawned PowerNite UI");
 			Console.WriteLine("Spawned PowerNite UI");
 		});
@@ -115,8 +105,8 @@ public class PowerNiteMod : ResoniteMod
             {
                 reloadAction();
             });
-            Debug($"Added PowerNite");
-            Console.WriteLine($"Added PowerNite");
+            Debug($"Added PowerNite's option {name} for path {path}");
+            
         }
     }
 }
