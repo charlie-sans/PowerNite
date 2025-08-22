@@ -1,0 +1,83 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+	<PropertyGroup>
+		<!-- If you don't want to provide a ResonitePath in dotnet build, you can specify one here -->
+		<ResonitePath>$(MSBuildThisFileDirectory)Resonite/</ResonitePath>
+		<ResonitePath Condition="Exists('C:\Program Files (x86)\Steam\steamapps\common\Resonite\')">C:\Program Files (x86)\Steam\steamapps\common\Resonite\</ResonitePath>
+		<ResonitePath Condition="Exists('$(HOME)/.steam/steam/steamapps/common/Resonite/')">$(HOME)/.steam/steam/steamapps/common/Resonite/</ResonitePath>
+	</PropertyGroup>
+	<ItemGroup>
+		<Reference Include="0Harmony">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_libs\0Harmony-Net9.dll</HintPath>
+		</Reference>
+		<Reference Include="Common.Logging">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\Common.Logging.dll</HintPath>
+		</Reference>
+		<Reference Include="Common.Logging.Core">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\Common.Logging.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="Elements.Assets">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\Elements.Assets.dll</HintPath>
+		</Reference>
+		<Reference Include="Elements.Core">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\Elements.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="Elements.Data">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\Elements.Data.dll</HintPath>
+		</Reference>
+		<Reference Include="Elements.Quantity">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\Elements.Quantity.dll</HintPath>
+		</Reference>
+		<Reference Include="FrooxEngine.Commands">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\FrooxEngine.Commands.dll</HintPath>
+		</Reference>
+		<Reference Include="FrooxEngine.GraphicalClient">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\FrooxEngine.GraphicalClient.dll</HintPath>
+		</Reference>
+		<Reference Include="FrooxEngine.Store">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\FrooxEngine.Store.dll</HintPath>
+		</Reference>
+		<Reference Include="FrooxEngine.Weaver">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\FrooxEngine.Weaver.dll</HintPath>
+		</Reference>
+		<Reference Include="ProtoFlux.Core">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\ProtoFlux.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="ProtoFlux.Nodes.Core">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\ProtoFlux.Nodes.Core.dll</HintPath>
+		</Reference>
+		<Reference Include="ProtoFlux.Nodes.FrooxEngine">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\ProtoFlux.Nodes.FrooxEngine.dll</HintPath>
+		</Reference>
+		<Reference Include="ProtoFluxBindings">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\ProtoFluxBindings.dll</HintPath>
+		</Reference>
+		<Reference Include="ResoniteHotReloadLib">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_libs\ResoniteHotReloadLib.dll</HintPath>
+		</Reference>
+		<Reference Include="ResoniteHotReloadLibCore">
+			<HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_libs\ResoniteHotReloadLibCore.dll</HintPath>
+		</Reference>
+		<Reference Include="ResoniteModLoader">
+			<HintPath>$(ResonitePath)Libraries\ResoniteModLoader.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="FrooxEngine">
+			<HintPath>$(ResonitePath)FrooxEngine.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
+	<PropertyGroup>
+		<!-- Optional: Control copying to rml_libs -->
+		<CopyToLibs Condition="'$(CopyToLibs)'==''">true</CopyToLibs>
+	</PropertyGroup>
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(CopyToLibs)'=='true'">
+		<Message Text="Attempting to copy $(TargetFileName) to $(ResonitePath)rml_libs" Importance="high" />
+		<Copy SourceFiles="$(TargetDir)$(TargetFileName)" DestinationFolder="$(ResonitePath)rml_libs" ContinueOnError="true" />
+	</Target>
+</Project>

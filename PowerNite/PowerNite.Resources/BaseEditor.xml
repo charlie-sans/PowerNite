@@ -1,0 +1,20 @@
+﻿<canvas width="800" height="600" background="#5e294e50">
+	<horizontal minheight="50" spacing="10" background="#222">
+		<vertical spacing="10" padding="10" minwidth="650">
+			<horizontal minheight="1" spacing="10" background="#222">
+				<text color="#fff" halign="center" fontsize="20">main.ps1</text>
+			</horizontal>
+			<textarea minheight="300" color="#fff" background="#f0f0f0" fontsize="30" placeholder="Enter your code here..." >codeasd</textarea>
+			<vertical spacing="10">
+				<textarea minheight="100" color="#fff" background="#111" fontsize="30" placeholder="Console output..." >consoleasd</textarea>
+				<input placeholder="Type here..." minheight="5" fontsize="30"></input>
+			</vertical>
+		</vertical>
+		<vertical spacing="2" padtop="10" padleft="10" padright="10" padbottom="10">
+			<button text="Run" fontsize="14" minwidth="2">Run</button>
+			<button text="Reset" fontsize="14" minwidth="2">Reset</button>
+			<button text="Save" fontsize="14" minwidth="2">Export</button>
+			<button text="Help"  fontsize="14" minwidth="2">Help</button>
+		</vertical>
+	</horizontal>
+</canvas>
