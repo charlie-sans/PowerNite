@@ -68,14 +68,10 @@ public class PowerNiteMod : ResoniteMod
 		//harmony.PatchAll();
 		//HotReloader.RegisterForHotReload(INSTANCE);
 		Msg("PowerNite Setup Complete");
-		//AddNewMenuOption("PowerNite", "Get Cmdlets", () => {
-		//	Msg("Getting Cmdlets...");
-		//	CmdletReflector.ListCmdletsFromSessionState();
-		//	Msg("Cmdlets Retrieved");
-		//});
-		// Add the reload menu option
+
 		AddNewMenuOption("PowerNite", "Create PowerShell", () =>
         {
+			Debug("Creating PowerShell UI");
 			UIXMLParser parser = new UIXMLParser();
 			var root = Engine.Current.WorldManager.FocusedWorld.RootSlot;
 			var newPanel = root.AddSlot("PowerNitePanel");
@@ -87,7 +83,6 @@ public class PowerNiteMod : ResoniteMod
 			builder.Root.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
 			RadiantUI_Constants.SetupEditorStyle(builder, true);
 			builder.Style.TextLineHeight = 1f;
-			
 			handleBuilderUI(newPanel, builder,  parser);
 
 			//text.Editor.Target.LocalEditingFinished += (x) =>
@@ -113,7 +108,9 @@ public class PowerNiteMod : ResoniteMod
 		});
     }
 	public static void handleBuilderUI(Slot newPanel, UIBuilder builder, UIXMLParser parser) {
+		Debug("handleBuilderUI called");
 		if (newPanel == null) {
+			Msg("New panel is null, cannot handle UI builder.");
 			var eui = BaseUI.CreateErrorUI(
 				Engine.Current.WorldManager.FocusedWorld.RootSlot, 
 				"New panel is null, cannot handle UI builder.", 
@@ -122,62 +119,149 @@ public class PowerNiteMod : ResoniteMod
 			eui.PositionInFrontOfUser(float3.Backward);
 			eui.Name = "PowerNiteErrorUI";
 			eui.GlobalPosition += new float3(0, 1, 0);
-			Msg("New panel is null, cannot handle UI builder.");
+			Debug("Error UI created for null panel");
 			return;
 		}
+
+		// Horizontal layout section
+		Msg("Setting up horizontal layout...");
 		var hz = builder.HorizontalLayout();
+
+		// Scroll area section
+		Msg("Setting up scroll area...");
 		var rect = builder.ScrollArea();
-		var text = builder.TextField("Contents to render");
+
+		// Text field section
+		Msg("Setting up text field...");
+		var text = builder.TextField("code, put here..");
+		text.Slot.Name = "PowerNiteTextField";
 		text.Slot.AttachComponent<OverlappingLayout>();
 		rect.Slot.AttachComponent<OverlappingLayout>();
-		rect.Slot.AttachComponent<ContentSizeFitter>().VerticalFit.Value = SizeFit.MinSize;
+		rect.Slot.AttachComponent<ContentSizeFitter>().VerticalFit.Value = SizeFit.PreferredSize;
 
-
-		rect.Slot.Parent.AttachComponent<LayoutElement>().FlexibleWidth.Value = 100f; // apparently a Scrollarea gives you it's child from .slot?
+		// Layout configuration section
+		Msg("Configuring layout elements...");
+		rect.Slot.Parent.AttachComponent<LayoutElement>().FlexibleWidth.Value = 100f;
 		builder.NestOut();
+
+		// Vertical layout and slider section
 		var v = builder.VerticalLayout();
+		var SliderElement = builder.Slider(30f, 100f, 50f);
+		Msg("Configuring slider element...");
 		v.Slot.GetComponent<LayoutElement>().FlexibleWidth.Value = 10f;
+
+		// Buttons section
+		Msg("Adding Run and Reset buttons...");
 		var run = builder.Button("Run");
-		var reset = builder.Button("Reset");
-
-		builder.NestOut();
-		text.Editor.Slot.GetComponent<Text>().Size.Value = 10f;
-		text.Editor.Slot.GetComponent<Text>().AutoSize = false;
-		rect.Slot.GetComponent<Text>().Size.Value = 10f;
-		rect.Slot.GetComponent<Text>().AutoSize = false;
-		builder.NestOut();
-		builder.NestInto(text.Slot);
-		var Regtext = builder.Text("");
-		Regtext.Slot.Name = "PowerNiteText";
-		var ColorText = text.Editor.Slot.GetComponentInChildren<Text>();
-		ColorText.Slot.Name = "PowerNiteColorText";
-		Regtext.AlignmentMode.Value = Elements.Assets.AlignmentMode.LineBased;
-		Regtext.HorizontalAlign.Value = Elements.Assets.TextHorizontalAlignment.Left;
-		Regtext.VerticalAlign.Value = Elements.Assets.TextVerticalAlignment.Top;
-		ColorText.VerticalAlign.Value = Elements.Assets.TextVerticalAlignment.Top;
-		ColorText.HorizontalAlign.Value = Elements.Assets.TextHorizontalAlignment.Left;
-		ColorText.AlignmentMode.Value = Elements.Assets.AlignmentMode.LineBased;
-		ColorText.Slot.GetComponent<RectTransform>().OffsetMin.Value = new float2(0, 0);
-		ColorText.Slot.GetComponent<RectTransform>().OffsetMax.Value = new float2(0, 0);
-		Regtext.Slot.GetComponent<RectTransform>().OffsetMin.Value = new float2(0, 0);
-		Regtext.Slot.GetComponent<RectTransform>().OffsetMax.Value = new float2(0, 0);
-
+		run.LocalPressed += (btn, data) =>
+		{
+			var butn = run;
+			if (butn.Slot.GetComponent<Button>() == null)
+			{
+				Console.WriteLine("Run button component is null, cannot attach event.");
+				return;
+			}
 		
-
-		//text.MarkChangeDirty();
-		var fontset = Regtext.Slot.AttachComponent<StaticFont>();
-		fontset.URL.Value = new Uri("resdb:///5ae30f1aad434d97a3b30556e0584d372dc1574cd4cec3beb60efd57467cb705");
-		Regtext.Font.Value = fontset.ReferenceID;
-		ColorText.Font.Value = fontset.ReferenceID;
-		//builder.Root.GetComponent<Canvas>().MarkChangeDirty();
-		text.Editor.Target.LocalEditingChanged += (x) => {
-			string highlighted = SimpleSyntaxHighlighter.HighlightSyntax(ColorText.Content);
-			Regtext.Content.Value = highlighted;
-			//Console.WriteLine($"Highlighted text: {highlighted}");
-			//Regtext.MarkChangeDirty();
-			//ColorText.MarkChangeDirty();
+			if (string.IsNullOrEmpty(text.Text.Content.Value))
+			{
+				Console.WriteLine("Text field is empty, cannot run PowerShell script.");
+			
+				return;
+			}
+			//Console.WriteLine($"Running PowerShell script: {text.Text.Content.Value}");
+			PowerNite.ASM.Runtime.Runtime.Reset();
+			PowerNite.ASM.Runtime.Runtime.Run(text.Text.Content.Value.Split('\n'));
 		};
-		
+		var reset = builder.Button("UICompile");
+		reset.LocalPressed += (btn, data) =>
+		{
+			UIXMLParser parser = new UIXMLParser();
+			if (string.IsNullOrEmpty(text.Text.Content.Value))
+			{
+				Console.WriteLine("Text field is empty, cannot render UI.");
+				//BaseUI.CreateErrorUI(builder.Root, "Text field is empty", 20f);
+				return;
+			}
+			var Builder = parser.Render(text.Text.Content.Value);
+			var slot = parser.RootSlot;
+			if (slot == null)
+			{
+				Console.WriteLine("Builder returned null slot, cannot render UI.");
+				BaseUI.CreateErrorUI(builder.Root, "Builder returned null slot", 20f);
+				return;
+			}
+			slot.PositionInFrontOfUser(float3.Backward);
+			slot.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
+			slot.Name = "PowerNiteUIXPanelDemo";
+
+		};
+		Msg("Configuring Run and Reset buttons...");
+		builder.NestOut();
+
+		// Text display section
+		builder.NestInto(text.Slot);
+		Msg("Adding Regtext and ColorText...");
+		var TextToColor = builder.Text("");
+		Msg("Setting up Regtext and ColorText...");
+		TextToColor.Slot.Name = "PowerNiteText";
+		Msg("Configuring Regtext properties...");
+		var SourceText = text.Editor.Slot.GetComponentInChildren<Text>();
+		Msg("Configuring ColorText properties...");
+		SourceText.Size.Value = 20f;
+		TextToColor.Size.Value = 20f;
+		SourceText.Slot.Name = "PowerNiteColorText";
+
+		// Slider event for text size
+		SliderElement.Value.OnValueChange += (x) => {
+			Debug($"Slider value changed: {x}");
+			SourceText.Size.Value = x;
+			TextToColor.Size.Value = x;
+			Debug($"Text size set to: {x}");
+		};
+
+		// Alignment and offset section
+		Msg("Setting up alignment and offsets...");
+		TextToColor.Slot.GetComponent<Text>().AutoSize = false;
+		SourceText.Slot.GetComponent<Text>().AutoSize = false;
+		TextToColor.HorizontalAlign.Value = Elements.Assets.TextHorizontalAlignment.Left;
+		TextToColor.VerticalAlign.Value = Elements.Assets.TextVerticalAlignment.Top;
+		SourceText.VerticalAlign.Value = Elements.Assets.TextVerticalAlignment.Top;
+		SourceText.HorizontalAlign.Value = Elements.Assets.TextHorizontalAlignment.Left;
+		SourceText.Slot.GetComponent<RectTransform>().OffsetMin.Value = new float2(0, 0);
+		SourceText.Slot.GetComponent<RectTransform>().OffsetMax.Value = new float2(0, 0);
+		TextToColor.Slot.GetComponent<RectTransform>().OffsetMin.Value = new float2(0, 0);
+		TextToColor.Slot.GetComponent<RectTransform>().OffsetMax.Value = new float2(0, 0);
+
+		// Font section
+		Msg("Attaching font...");
+		var fontset = TextToColor.Slot.AttachComponent<StaticFont>();
+		fontset.URL.Value = new Uri("resdb:///5ae30f1aad434d97a3b30556e0584d372dc1574cd4cec3beb60efd57467cb705");
+		TextToColor.Font.Value = fontset.ReferenceID;
+		SourceText.Font.Value = fontset.ReferenceID;
+
+		// Syntax highlighter event section
+		Msg("Setting up syntax highlighter event...");
+		text.Editor.Target.LocalEditingChanged += (x) => {
+			Debug("LocalEditingChanged event triggered");
+			string highlighted = SimpleSyntaxHighlighter.HighlightSyntax(SourceText.Content, TextToColor);
+			TextToColor.Content.Value = highlighted;
+			Debug($"Highlighted text updated: {highlighted.Length} chars");
+		};
+
+
+		// Fix for CS1593: Delegate 'ButtonEventHandler' does not take 1 arguments
+		if (run.Slot.GetComponent<Button>() == null)
+		{
+			Debug("Run button component is null, cannot attach event.");
+			return;
+		}
+
+		// Fix for CS1660: Cannot convert lambda expression to type 'WorldDelegate' because it is not a delegate type
+
+
+
+
+		Msg("handleBuilderUI completed.");
 	}
 	public static void AddNewMenuOption(string path, string name, Action reloadAction)
     {
@@ -203,7 +287,7 @@ public class PowerNiteMod : ResoniteMod
     }
 }
 public class SimpleSyntaxHighlighter {
-	private static readonly Dictionary<string, string> colorMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+	private static readonly Dictionary<string, string> PwshcolorMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 	{
         // Keywords
         { "function", "blue" },
@@ -288,13 +372,25 @@ public class SimpleSyntaxHighlighter {
         { "#", "gray" }
 	};
 
-	public static string HighlightSyntax(string input) {
+	public static Dictionary<string, string> ParseExtention(Text Element) {
+		// Return a copy of the color map to avoid external modifications
+		switch (Element.Content.Value.ToLowerInvariant()) {
+			case "pwsh":
+				return PwshcolorMap; // PowerShell colors
+			default:
+				Console.WriteLine($"Unknown extension: {Element.Content}");
+				return new Dictionary<string, string>(); // Default to nothing
+		}
+	}
+
+	public static string HighlightSyntax(string input, Text Element) {
 		if (string.IsNullOrEmpty(input))
 			return input;
 
 		StringBuilder result = new StringBuilder();
 		string[] lines = input.Split('\n');
-
+		var colorMap = PwshcolorMap; // Use the PowerShell color map for now
+		// var colorMap = ParseExtention(Element);
 		foreach (string line in lines) {
 			if (line.TrimStart().StartsWith("#")) {
 				// Entire line comment
@@ -335,7 +431,7 @@ public class SimpleSyntaxHighlighter {
 
 	private static bool IsCmdlet(string word) {
 		// Check if word looks like a cmdlet (Verb-Noun pattern)
-		return Regex.IsMatch(word, @"^[A-Za-z]+-[A-Za-z]+\w*$");
+		return Regex.IsMatch(word, @"^[A-Za-z]+-[A-ZaZ]+\w*$");
 	}
 
 	private static bool IsStringLiteral(string word) {
@@ -344,8 +440,5 @@ public class SimpleSyntaxHighlighter {
 			   (word.StartsWith("'") && word.EndsWith("'"));
 	}
 
-	// Optional: Method to add custom keywords
-	public static void AddKeyword(string keyword, string color) {
-		colorMap[keyword] = color;
-	}
+	
 }
