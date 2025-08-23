@@ -26,9 +26,6 @@
 
 	</PropertyGroup>
 	<ItemGroup>
-	  <Compile Remove="PowerShell.Extentions\UIXML.Parser.cs" />
-	</ItemGroup>
-	<ItemGroup>
 	  <EmbeddedResource Include="PowerNite.Resources\BaseEditor.xml" />
 	</ItemGroup>
 
