@@ -151,26 +151,26 @@ public class PowerNiteMod : ResoniteMod
 
 		// Buttons section
 		Msg("Adding Run and Reset buttons...");
-		var run = builder.Button("Run");
-		run.LocalPressed += (btn, data) =>
-		{
-			var butn = run;
-			if (butn.Slot.GetComponent<Button>() == null)
-			{
-				Console.WriteLine("Run button component is null, cannot attach event.");
-				return;
-			}
+		//var run = builder.Button("Run");
+		//run.LocalPressed += (btn, data) =>
+		//{
+		//	var butn = run;
+		//	if (butn.Slot.GetComponent<Button>() == null)
+		//	{
+		//		Console.WriteLine("Run button component is null, cannot attach event.");
+		//		return;
+		//	}
 		
-			if (string.IsNullOrEmpty(text.Text.Content.Value))
-			{
-				Console.WriteLine("Text field is empty, cannot run PowerShell script.");
+		//	if (string.IsNullOrEmpty(text.Text.Content.Value))
+		//	{
+		//		Console.WriteLine("Text field is empty, cannot run PowerShell script.");
 			
-				return;
-			}
-			//Console.WriteLine($"Running PowerShell script: {text.Text.Content.Value}");
-			PowerNite.ASM.Runtime.Runtime.Reset();
-			PowerNite.ASM.Runtime.Runtime.Run(text.Text.Content.Value.Split('\n'));
-		};
+		//		return;
+		//	}
+		//	//Console.WriteLine($"Running PowerShell script: {text.Text.Content.Value}");
+		//	PowerNite.ASM.Runtime.Runtime.Reset();
+		//	PowerNite.ASM.Runtime.Runtime.Run(text.Text.Content.Value.Split('\n'));
+		//};
 		var reset = builder.Button("UICompile");
 		reset.LocalPressed += (btn, data) =>
 		{
@@ -185,11 +185,12 @@ public class PowerNiteMod : ResoniteMod
 			{
 				Console.WriteLine("Builder returned null slot, cannot render UI.");
 				BaseUI.CreateErrorUI(builder.Root, "Builder returned null slot", 20f);
+
 				return;
 			}
-			slot.PositionInFrontOfUser(float3.Backward);
-			slot.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
-			slot.Name = "PowerNiteUIXPanelDemo";
+			parser.RootSlot.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
+			parser.RootSlot.PositionInFrontOfUser(float3.Backward);
+			parser.RootSlot.Name = "PowerNiteUIXPanelDemo";
 
 		};
 		Msg("Configuring Run and Reset buttons...");
@@ -247,12 +248,12 @@ public class PowerNiteMod : ResoniteMod
 		};
 
 
-		// Fix for CS1593: Delegate 'ButtonEventHandler' does not take 1 arguments
-		if (run.Slot.GetComponent<Button>() == null)
-		{
-			Debug("Run button component is null, cannot attach event.");
-			return;
-		}
+		//// Fix for CS1593: Delegate 'ButtonEventHandler' does not take 1 arguments
+		//if (run.Slot.GetComponent<Button>() == null)
+		//{
+		//	Debug("Run button component is null, cannot attach event.");
+		//	return;
+		//}
 
 		// Fix for CS1660: Cannot convert lambda expression to type 'WorldDelegate' because it is not a delegate type
 

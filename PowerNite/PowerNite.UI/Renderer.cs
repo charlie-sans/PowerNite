@@ -31,7 +31,7 @@ namespace PowerNite.PowerShell.Extentions
             var newCanvas = Engine.Current.WorldManager.FocusedWorld.RootSlot.AddSlot("PowerNiteUIXPanel");
             //newCanvas.AttachComponent<Canvas>();
             //newCanvas.GetComponent<Canvas>().Size.Value = new float2(1280, 800);
-            newCanvas.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
+            newCanvas.GlobalScale = new float3(0.00025f, 0.00025f, 0.00025f);
 
             builder = RadiantUI_Panel.SetupPanel(newCanvas, "PowerNiteUIXPanel", new float2(1280, 800));
             RootSlot = newCanvas;
@@ -49,7 +49,10 @@ namespace PowerNite.PowerShell.Extentions
                     20f);
                 root.GlobalScale = new float3(0.001f, 0.001f, 0.01f);
                 root.PositionInFrontOfUser(float3.Backward);
-                return builder;
+				newCanvas.Destroy();
+				RootSlot = null;
+				builder = null;
+				return null;
             }
 
             // Recursively process XML elements

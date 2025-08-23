@@ -10,7 +10,8 @@ internal class BaseUI {
 	}
 	// Static error UI creator, attaches to parent
 	public static Slot CreateErrorUI(Slot parent, string msg, float font_size) {
-		var builder = RadiantUI_Panel.SetupPanel(parent, "ErrorCanvas", new float2(800, 600));
+		var RootSlot = parent.AddSlot("ErrorCanvas");
+		var builder = RadiantUI_Panel.SetupPanel(RootSlot, "ErrorCanvas", new float2(800, 600));
 		RadiantUI_Constants.SetupEditorStyle(builder, true);
 	
 		builder.Style.TextAlignment = Alignment.MiddleLeft;
@@ -20,7 +21,8 @@ internal class BaseUI {
 		var text = builder.Text(msg);
 		text.Size.Value = font_size;
 		builder.Text("This is an error message, please report this to the developer.");
-		builder.Root.GlobalScale = new float3(0.01f, 0.01f, 0.01f);
+		RootSlot.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
+		RootSlot.PositionInFrontOfUser(float3.Backward);
 		return builder.Root;
 	}
 }
