@@ -18,9 +18,9 @@ internal class BaseUI {
 		builder.Style.ForceExpandHeight = false;
 		builder.Style.TextLineHeight = 1f;
 		builder.VerticalLayout();
+		builder.Image();
+		builder.Text("");
 		var text = builder.Text(msg);
-		text.Size.Value = font_size;
-		builder.Text("This is an error message, please report this to the developer.");
 		RootSlot.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
 		RootSlot.PositionInFrontOfUser(float3.Backward);
 		return builder.Root;
