@@ -72,7 +72,6 @@ public class PowerNiteMod : ResoniteMod
 		AddNewMenuOption("PowerNite", "Create PowerShell", () =>
         {
 			Debug("Creating PowerShell UI");
-			UIXMLParser parser = new UIXMLParser();
 			var root = Engine.Current.WorldManager.FocusedWorld.RootSlot;
 			var newPanel = root.AddSlot("PowerNitePanel");
 
@@ -83,7 +82,7 @@ public class PowerNiteMod : ResoniteMod
 			builder.Root.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
 			RadiantUI_Constants.SetupEditorStyle(builder, true);
 			builder.Style.TextLineHeight = 1f;
-			handleBuilderUI(newPanel, builder,  parser);
+			handleBuilderUI(newPanel, builder, new UIXMLParser());
 
 			//text.Editor.Target.LocalEditingFinished += (x) =>
 			//{
@@ -175,15 +174,13 @@ public class PowerNiteMod : ResoniteMod
 		var reset = builder.Button("UICompile");
 		reset.LocalPressed += (btn, data) =>
 		{
-			UIXMLParser parser = new UIXMLParser();
 			if (string.IsNullOrEmpty(text.Text.Content.Value))
 			{
 				Console.WriteLine("Text field is empty, cannot render UI.");
-				//BaseUI.CreateErrorUI(builder.Root, "Text field is empty", 20f);
 				return;
 			}
 			var Builder = parser.Render(text.Text.Content.Value);
-			var slot = parser.RootSlot;
+			var slot = Builder.Root; // Use builder's root slot
 			if (slot == null)
 			{
 				Console.WriteLine("Builder returned null slot, cannot render UI.");
@@ -243,9 +240,10 @@ public class PowerNiteMod : ResoniteMod
 		Msg("Setting up syntax highlighter event...");
 		text.Editor.Target.LocalEditingChanged += (x) => {
 			Debug("LocalEditingChanged event triggered");
-			string highlighted = SimpleSyntaxHighlighter.HighlightSyntax(SourceText.Content, TextToColor);
-			TextToColor.Content.Value = highlighted;
-			Debug($"Highlighted text updated: {highlighted.Length} chars");
+			// string highlighted = SimpleSyntaxHighlighter.HighlightSyntax(SourceText.Content, TextToColor);
+			// TextToColor.Content.Value = highlighted;
+			TextToColor.Content.Value = SourceText.Content;
+			// Debug($"Highlighted text updated: {highlighted.Length} chars");
 		};
 
 

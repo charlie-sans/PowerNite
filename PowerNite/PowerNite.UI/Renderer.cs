@@ -15,23 +15,27 @@ namespace PowerNite.PowerShell.Extentions
 {
     public class UIXMLParser
     {
-		public Slot RootSlot;
-		public UIBuilder builder = RadiantUI_Panel.SetupPanel(Engine.Current.WorldManager.FocusedWorld.RootSlot.AddSlot("UIXROOTCANVAS"), "UIXROOTCANVAS", new float2(800, 600));
-		public UIXMLParser()
+        public Slot RootSlot;
+        public UIBuilder builder;
+
+        public UIXMLParser()
         {
-				RootSlot = builder.Root.Parent.Parent;
-				RootSlot.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
-			
-		}
+            // No panel/builder creation here
+        }
 
         public UIBuilder Render(string XML)
         {
             XDocument doc = XDocument.Parse(XML);
+
+            // Create the panel and builder here
             var newCanvas = Engine.Current.WorldManager.FocusedWorld.RootSlot.AddSlot("PowerNiteUIXPanel");
-            newCanvas.AttachComponent<Canvas>();
-            newCanvas.GetComponent<Canvas>().Size.Value = new float2(1280, 800);
+            //newCanvas.AttachComponent<Canvas>();
+            //newCanvas.GetComponent<Canvas>().Size.Value = new float2(1280, 800);
             newCanvas.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
-            
+
+            builder = RadiantUI_Panel.SetupPanel(newCanvas, "PowerNiteUIXPanel", new float2(1280, 800));
+            RootSlot = newCanvas;
+
             RadiantUI_Constants.SetupEditorStyle(builder, true);
 
             // Check root element
