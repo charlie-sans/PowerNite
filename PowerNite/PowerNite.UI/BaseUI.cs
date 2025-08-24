@@ -4,7 +4,7 @@ using FrooxEngine;
 using Elements.Core;
 namespace PowerNite.PowerNite.UI;
 internal class BaseUI {
-
+	public static readonly string Logo_Error = "https://raw.githubusercontent.com/PowerNite/PowerNite/main/Assets/PowerNite.UI/Textures/ErrorLogo.png";
 	public BaseUI(string name, float2 size) {
 	
 	}
@@ -18,7 +18,7 @@ internal class BaseUI {
 		builder.Style.ForceExpandHeight = false;
 		builder.Style.TextLineHeight = 1f;
 		builder.VerticalLayout();
-		builder.Image();
+		builder.Image(new Uri(Logo_Error));
 		builder.Text("");
 		var text = builder.Text(msg);
 		RootSlot.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
