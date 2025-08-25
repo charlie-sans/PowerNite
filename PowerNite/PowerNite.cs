@@ -37,7 +37,7 @@ public class PowerNiteMod : ResoniteMod
         Harmony harm = new Harmony("ovh.finite.PowerNite");
         harm.UnpatchAll("ovh.finite.PowerNite");
 		HotReloader.RemoveMenuOption("PowerNite", "Create PowerShell");
-		//HotReloader.RemoveMenuOption("PowerNite", "Get Cmdlets");
+		HotReloader.RemoveMenuOption("PowerNite", "Create MASMShell");
 
 		//GC.Collect();
 
@@ -74,15 +74,17 @@ public class PowerNiteMod : ResoniteMod
 			Debug("Creating PowerShell UI");
 			var root = Engine.Current.WorldManager.FocusedWorld.RootSlot;
 			var newPanel = root.AddSlot("PowerNitePanel");
-
-
-			newPanel.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
-			newPanel.PositionInFrontOfUser(float3.Backward);
-			var builder = RadiantUI_Panel.SetupPanel(newPanel, "PowerNiteCanvas", new float2(1200, 800));
-			builder.Root.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
-			RadiantUI_Constants.SetupEditorStyle(builder, true);
-			builder.Style.TextLineHeight = 1f;
-			handleBuilderUI(newPanel, builder, new UIXMLParser());
+			UIXMLParser parser = new UIXMLParser();
+			var UIBuilder = parser.Render("<canvas name=\"PowerNite MASM Panel\"><texst>Hello world</texst><cat></cat><meow></meow></canvas>");
+			parser.RootSlot.PositionInFrontOfUser(float3.Backward);
+			parser.RootSlot.Name = "PowerNiteMASMPanel";
+			//newPanel.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
+			//newPanel.PositionInFrontOfUser(float3.Backward);
+			//var builder = RadiantUI_Panel.SetupPanel(newPanel, "PowerNiteCanvas", new float2(1200, 800));
+			//builder.Root.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
+			//RadiantUI_Constants.SetupEditorStyle(builder, true);
+			//builder.Style.TextLineHeight = 1f;
+			//handleBuilderUI(newPanel, builder, new UIXMLParser());
 
 			//text.Editor.Target.LocalEditingFinished += (x) =>
 			//{

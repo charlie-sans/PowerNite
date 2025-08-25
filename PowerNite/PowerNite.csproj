@@ -29,12 +29,6 @@
 	  <EmbeddedResource Include="PowerNite.Resources\BaseEditor.xml" />
 	</ItemGroup>
 
-
-	<ItemGroup>
-	  <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.5.2" />
-	  <PackageReference Include="System.Management.Automation" Version="7.5.2" />
-	</ItemGroup>
-
 	<ItemGroup>
 		<Reference Include="0Harmony">
 		  <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_libs\0Harmony.dll</HintPath>
@@ -91,6 +85,9 @@
 		<Reference Include="FrooxEngine">
 			<HintPath>$(ResonitePath)FrooxEngine.dll</HintPath>
 			<Private>False</Private>
+		</Reference>
+		<Reference Include="System.Management.Automation">
+		  <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_libs\System.Management.Automation.dll</HintPath>
 		</Reference>
 	</ItemGroup>
 

@@ -11,7 +11,7 @@ internal class BaseUI {
 	// Static error UI creator, attaches to parent
 	public static Slot CreateErrorUI(Slot parent, string msg, float font_size) {
 		var RootSlot = parent.AddSlot("ErrorCanvas");
-		var builder = RadiantUI_Panel.SetupPanel(RootSlot, "ErrorCanvas", new float2(800, 600));
+		var builder = RadiantUI_Panel.SetupPanel(RootSlot, "Woops, something Broke :{", new float2(800, 1280));
 		RadiantUI_Constants.SetupEditorStyle(builder, true);
 	
 		builder.Style.TextAlignment = Alignment.MiddleLeft;
@@ -21,6 +21,9 @@ internal class BaseUI {
 		builder.Image(new Uri(Logo_Error));
 		builder.Text("");
 		var text = builder.Text(msg);
+		var textbox = builder.Text(System.Environment.StackTrace);
+		textbox.VerticalAutoSize.Value = false;
+		textbox.Size.Value = 10f;
 		RootSlot.GlobalScale = new float3(0.001f, 0.001f, 0.001f);
 		RootSlot.PositionInFrontOfUser(float3.Backward);
 		return builder.Root;
