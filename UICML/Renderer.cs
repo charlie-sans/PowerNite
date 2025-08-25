@@ -1,172 +1,324 @@
-﻿using Elements.Core;
-using FrooxEngine;
-using FrooxEngine.UIX;
-using ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
-using System.Xml.Serialization;
+
+using Elements.Core;
+
+using FrooxEngine;
+using FrooxEngine.ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Slots;
+using FrooxEngine.UIX;
+
+using PowerNite.PowerNite.UI;
+
+using ProtoFlux.Runtimes.Execution.Nodes.FrooxEngine.Audio;
 namespace PowerNite.PowerShell.Extentions
 {
     public class UIXMLParser
     {
-        public static Slot rootSlot = Engine.Current.WorldManager.FocusedWorld.RootSlot;
-        public static Uri BackgroundLogo = new Uri("resdb:///6c145eed7431fc20c8d33c3fccc873f97e4a8ca21c1a4199447942cf79be6ffa.png");    
-        public static Uri NineSlice = new Uri("resdb:///cb7ba11c8a391d6c8b4b5c5122684888a6a719179996e88c954a49b6b031a845.png");
-        public static UI_UnlitMaterial UIMat { get; private set; }
-        // slot cache for the canvas slot
-        public Slot CanvasSlot { get; private set; } 
+        public Slot RootSlot;
+        public UIBuilder builder;
+
         public UIXMLParser()
         {
-           
-            // Initialize the CanvasSlot
-            CanvasSlot = rootSlot.AddSlot("Canvas");
-            CanvasSlot.AttachComponent<Canvas>().Size.Value = new float2(32, 16); // Default size if the canvas can't be created
+            // No panel/builder creation here
         }
-        public Slot Parse(string xml)
+		public List<string> Errors = new List<string>();
+		public List<string> AllowedXMLElements = new List<string>() {
+			"canvas","vertical","horizontal","overlapping","scroll",
+			"text","button","input","checkbox","image","slider","box","textarea"
+		};
+		public static int LevenshteinDistance(string s, string t) {
+			if (string.IsNullOrEmpty(s)) {
+				return string.IsNullOrEmpty(t) ? 0 : t.Length;
+			}
+			if (string.IsNullOrEmpty(t)) {
+				return s.Length;
+			}
+			int n = s.Length;
+			int m = t.Length;
+			int[,] d = new int[n + 1, m + 1];
+			for (int i = 0; i <= n; d[i, 0] = i++) { }
+			for (int j = 0; j <= m; d[0, j] = j++) { }
+			for (int i = 1; i <= n; i++) {
+				for (int j = 1; j <= m; j++) {
+					int cost = (t[j - 1] == s[i - 1]) ? 0 : 1;
+					d[i, j] = Math.Min(
+						Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+						d[i - 1, j - 1] + cost);
+				}
+			}
+			return d[n, m];
+		}
+		public UIBuilder Render(string XML)
         {
-            var slot = CanvasSlot.AddSlot("UIXMLParserRoot");
-            if (CanvasSlot != null)
+            XDocument doc = XDocument.Parse(XML);
+
+            // Create the panel and builder here
+            var newCanvas = Engine.Current.WorldManager.FocusedWorld.RootSlot.AddSlot("PowerNiteUIXPanel");
+            //newCanvas.AttachComponent<Canvas>();
+            //newCanvas.GetComponent<Canvas>().Size.Value = new float2(1280, 800);
+            newCanvas.GlobalScale = new float3(0.00025f, 0.00025f, 0.00025f);
+
+            builder = RadiantUI_Panel.SetupPanel(newCanvas, "PowerNiteUIXPanelRoot", new float2(1280, 800));
+            RootSlot = newCanvas;
+			var audioslot = RootSlot.AddSlot("audioholder");
+		
+			RadiantUI_Constants.SetupEditorStyle(builder, true);
+
+            // Check root element
+            if (doc.Root.Name.LocalName != "canvas")
             {
-                // clear the previous canvas slot if it exists
-                CanvasSlot = null;
-            }
-            var doc = new XmlDocument();
-            try
-            {
-                doc.LoadXml(xml);
-            }
-            catch (XmlException ex)
-            {
-                var errorSlot = slot.AddSlot("xmlError").AttachComponent<TextRenderer>();
-                errorSlot.Text.Value = $"XML Parsing Error: {ex.Message}";
-            }
-
-            var rootElement = doc.DocumentElement; // root element should be <canvas> or similar
-            if (rootElement == null || rootElement.Name != "canvas")
-            {
-                var errorSlot = slot.AddSlot("invalidRoot").AttachComponent<TextRenderer>();
-                errorSlot.Text.Value = "Invalid root element. Expected <canvas>.";
-
+                Console.WriteLine("Root element is not <canvas>");
+                builder.Root.Destroy();
+                var root = BaseUI.CreateErrorUI(
+                    "Root element is not <canvas>",
+                    20f);
+                root.GlobalScale = new float3(0.001f, 0.001f, 0.01f);
+                root.PositionInFrontOfUser(float3.Backward);
+				newCanvas.Destroy();
+				RootSlot = null;
+				builder = null;
+				return null;
             }
 
-            // Process the XML elements and create corresponding Slots based on the XML Schema
-            XDocument xDocument = XDocument.Parse(xml);
-            XElement canvas = xDocument.Root;
+            // Recursively process XML elements
+            ProcessElement(doc.Root, builder);
+			if (Errors.Count > 0) {
+				Console.WriteLine("Errors found in UI XML:");
+				newCanvas.Destroy(); // Remove the faulty UI
+				builder.Root.Destroy();
+				var UI = BaseUI.CreateErrorUI(
+			
+					"Errors in UI XML:\n" + string.Join("\n", Errors),
+					20f);
+				return null;
+			}
 
-            // Process canvas
-            ProcessElement(canvas);
+				return builder;
+		}
 
-            slot.Name = "ParsedSlot";
-
-            return slot;
-        }
-        private static void Msg(string message)
+        private void ProcessElement(XElement element, UIBuilder builder)
         {
-            Console.WriteLine(message);
-        }
-        private void ProcessElement(XElement element)
-        {
-            Msg($"Element: <{element.Name}>");
-
-            // Collect all attributes into a dictionary
-            var attributes = element.Attributes()
-                .ToDictionary(a => a.Name.LocalName.ToLower(), a => a.Value);
-
-            // Print attributes
-            foreach (var attr in attributes)
-            {
-                Msg($"Attribute: {attr.Key} = {attr.Value}");
-            }
-
-            // Pass all attributes to the appropriate handler
-            switch (element.Name.LocalName.ToLower())
+            // Map XML tag to UIBuilder method
+            switch (element.Name.LocalName)
             {
                 case "canvas":
-                    HandleCanvasAttributes(attributes);
-                    Msg("Canvas element found.");
+                    // Canvas attributes (width, height, etc.)
+                    var width = element.Attribute("width")?.Value;
+                    var height = element.Attribute("height")?.Value;
+					var name = element.Attribute("name")?.Value ?? "PowerNiteUIXPanel";
+					if (width != null && height != null) {
+                        RootSlot.GetComponent<Canvas>().Size.Value = new float2(float.Parse(width), float.Parse(height));
+                        Console.WriteLine("set tcanvas size to: " + width + "x" + height);
+					}
+					RootSlot.Name = name;
+					// Process children
+					foreach (var child in element.Elements())
+                        ProcessElement(child, builder);
                     break;
 
+                case "vertical":
+                    builder.VerticalLayout();
+                    foreach (var child in element.Elements())
+                        ProcessElement(child, builder);
+                    builder.NestOut();
+                    break;
+
+                case "horizontal":
+                    builder.HorizontalLayout();
+                    foreach (var child in element.Elements())
+                        ProcessElement(child, builder);
+                    builder.NestOut();
+                    break;
+
+                case "overlapping":
+                    builder.OverlappingLayout();
+                    foreach (var child in element.Elements())
+                        ProcessElement(child, builder);
+                    builder.NestOut();
+                    break;
+
+                case "scroll":
+                    builder.ScrollArea();
+                    foreach (var child in element.Elements())
+                        ProcessElement(child, builder);
+                    builder.NestOut();
+                    break;
+
+                case "text": {
+						var color = element.Attribute("color")?.Value;
+						var fontsize = element.Attribute("fontsize")?.Value;
+						var minwidth = element.Attribute("minwidth")?.Value;
+						var minheight = element.Attribute("minheight")?.Value;
+						var text = element.Value;
+						var txt = builder.Text(text);
+						if (!string.IsNullOrWhiteSpace(color)) {
+							try {
+								txt.Color.Value = colorX.Parse(color);
+							} catch {
+								// Optionally log or fallback to default color
+							}
+						}
+						if (fontsize != null)
+							txt.Size.Value = int.Parse(fontsize);
+						if (minwidth != null && minheight != null) {
+							var comp = txt.Slot.AttachComponent<LayoutElement>();
+							comp.FlexibleHeight.Value = int.Parse(minheight);
+							comp.FlexibleWidth.Value = int.Parse(minwidth);
+						}
+					}
+                    break;
+
+                case "button":
+                    {
+                        var color = element.Attribute("color")?.Value;
+                        var fontsize = element.Attribute("fontsize")?.Value;
+						var btnname = element.Attribute("name")?.Value;
+
+						var text = element.Value;
+                        var btn = builder.Button(text);
+						if (btnname != null)
+							btn.Slot.Name = btnname;
+						if (!string.IsNullOrWhiteSpace(color))
+                        {
+                            try
+                            {
+                                btn.ColorDrivers[0].NormalColor.Value = colorX.Parse(color);
+                            }
+                            catch
+                            {
+                                // Optionally log or fallback to default color
+                            }
+                        }
+                        if (fontsize != null)
+                            btn.Slot.GetComponentInChildren<Text>().Size.Value = int.Parse(fontsize);
+                    }
+                    break;
+
+                case "input":
+                    {
+                        var color = element.Attribute("color")?.Value;
+                        var fontsize = element.Attribute("fontsize")?.Value;
+                        var placeholder = element.Attribute("placeholder")?.Value;
+                        var tf = builder.TextField(element.Value);
+                        if (!string.IsNullOrWhiteSpace(color))
+                        {
+                            try
+                            {
+                                tf.Text.Color.Value = colorX.Parse(color);
+                            }
+                            catch
+                            {
+                                // Optionally log or fallback to default color
+                            }
+                        }
+                        if (fontsize != null)
+                            tf.Text.Size.Value = int.Parse(fontsize);
+                        if (placeholder != null)
+                            tf.Text.NullContent.Value = placeholder;
+                    }
+                    break;
+
+                case "checkbox":
+                    builder.Checkbox();
+                    break;
+
+                case "image":
+                    {
+                        var uri = element.Attribute("uri")?.Value;
+                        if (uri != null)
+                            builder.Image(new Uri(uri));
+                    }
+                    break;
+
+                case "slider":
+                    builder.Slider(32f); // Default height
+                    break;
+
+                case "box":
+                    var slot = builder.Empty("Box");
+					var minwidt = element.Attribute("minwidth")?.Value;
+					var minheigh = element.Attribute("minheight")?.Value;
+					if (minheigh != null || minwidt != null) {
+						var comp = slot.GetComponentOrAttach<LayoutElement>(); // should replace the if statements with GetComponentOrAttach
+						if (minheigh != null)
+							comp.FlexibleHeight.Value = int.Parse(minheigh);
+						if (minwidt != null)
+							comp.FlexibleWidth.Value = int.Parse(minwidt);
+					}
+					break;
+
+                case "textarea":
+                    {
+                        var color = element.Attribute("color")?.Value;
+                        var fontsize = element.Attribute("fontsize")?.Value;
+                        var placeholder = element.Attribute("placeholder")?.Value;
+						var minwidth = element.Attribute("minwidth")?.Value;
+						var minheight = element.Attribute("minheight")?.Value;
+						Console.WriteLine("Creating textarea with min size: " + minwidth + "x" + minheight);
+						var tf = builder.TextField(element.Value);
+						var audo = tf.Slot.AttachComponent<StaticAudioClip>();
+						var areaname = element.Attribute("name")?.Value;
+						if (areaname != null)
+							tf.Slot.Name = areaname;
+						audo.Slot.GetComponent<StaticAudioClip>().URL.Value = new Uri("https://cdn.freesound.org/previews/561/561661_7107243-hq.ogg");
+						tf.Editor.Target.LocalEditingChanged += (E) => {
+							var rs = E.Slot.PlayOneShot(audo, 1);
+							rs.MaxDistance.Value = 5f;
+							rs.MaxScale.Value = 10f;
+							rs.MinScale.Value = 0f;	
+							//E.Slot.Parent.Parent.PlayOneShot(audo,1);
+							Console.WriteLine("Played sound on textarea edit");
+						};
+						if (minheight != null) {
+							Console.WriteLine("Attached LayoutElement to textarea");
+							tf.Slot.GetComponent<LayoutElement>().FlexibleHeight.Value = int.Parse(minheight);
+						}
+						if (minwidth != null) {
+							tf.Slot.GetComponent<LayoutElement>().FlexibleWidth.Value = int.Parse(minwidth);
+						}
+                        if (!string.IsNullOrWhiteSpace(color))
+                        {
+                            try
+                            {
+                                tf.Text.Color.Value = colorX.Parse(color);
+                            }
+                            catch
+                            {
+                                // Optionally log or fallback to default color
+                            }
+                        }
+                        if (fontsize != null)
+                            tf.Text.Size.Value = int.Parse(fontsize);
+                        if (placeholder != null)
+                            tf.Text.NullContent.Value = placeholder;
+
+					}
+                    break;
+
+         
                 default:
-                    Msg($"Unknown element: <{element.Name}>");
-                    break;
-            }
+                    Console.WriteLine($"Unknown element: {element.Name}");
+					Errors.Add($"Unknown element: {element.Name}");
+					// Suggest closest match
+					int closestDistance = int.MaxValue;
+					string closestMatch = null;
+					foreach (var allowed in AllowedXMLElements) {
+						int dist = LevenshteinDistance(element.Name.LocalName, allowed);
+						if (dist < closestDistance) {
+							closestDistance = dist;
+							closestMatch = allowed;
+						}
+					}
+					if (closestMatch != null && closestDistance <= 3) {
+						Errors.Add($" Did you mean <{closestMatch}>?");
+						Console.WriteLine($" Did you mean <{closestMatch}>?");
+					}
 
-            // Process content if it's text content
-            if (!string.IsNullOrEmpty(element.Value.Trim()) && !element.Elements().Any())
-            {
-                Msg($"Content: {element.Value}");
+					break;
             }
-
-            // Process child elements
-            foreach (XElement child in element.Elements())
-            {
-                ProcessElement(child);
-            }
-        }
-
-        private void HandleCanvasAttributes(Dictionary<string, string> attrs)
-        {
-            CanvasSlot.Name = attrs.TryGetValue("name", out var name) ? name : "Canvas";
-            if (CanvasSlot != null)
-            {
-                // set up the canvas with basic slots.
-                InitCanvas(CanvasSlot);
-
-            }
-            // get the width and height
-            if (attrs.TryGetValue("width", out var widthStr) && int.TryParse(widthStr, out var width) && attrs.TryGetValue("height", out var heightStr) && int.TryParse(heightStr, out var height))
-            {
-                Msg($"Canvas Width: {width}");
-                Msg($"Canvas Height: {height}");
-                CanvasSlot.GetComponent<Canvas>().Size.Value = new float2(width, height);
-            }
-        }
-        /// <summary>
-        /// Generatess the bare minium for a canvas slot.
-        /// </summary>  
-       
-        public static void InitCanvas(Slot canvasSlot)
-        {
-            // god this method looks terrible, but it works, so whatever.
-            canvasSlot.GlobalScale = new float3(0.1f, 0.1f, 0.1f); // set the global scale to 0.1f as FrooxEngine uses 1 unit = 1 meter, and we want the canvas to be smaller.
-            var backing = canvasSlot.AddSlot("Backing");
-            canvasSlot.AddSlot("content");
-            Msg("initializing canvas slot wih backing and contents");
-            backing.AttachComponent<StaticTexture2D>().URL.Value = NineSlice;
-            backing.AttachComponent<RawImage>().Texture.Value = backing.GetComponent<StaticTexture2D>().ReferenceID; // this is funkyyyyy, i love IT!!!!!
-            backing.AddSlot("Quad").AttachComponent<MeshRenderer>().Material.Value = UIMat.ReferenceID;
-            var quad = backing.FindChild("Quad");
-            var mesh = quad.AttachComponent<QuadMesh>();
-            quad.GetComponent<MeshRenderer>().Mesh.Value = mesh.ReferenceID;
-            mesh.Size.Value = new float2(32, 16); 
-            quad.LocalPosition = new float3(0, 0, -0.01f); // slightly behind the canvas so that it doesn't occlude the canvas
-        }
-    }
-
-    public class UIXML
-    {
-        public static Slot rootSlot = Engine.Current.WorldManager.FocusedWorld.RootSlot;
-        public static Slot Render(string xml)
-        {
-            var slott = Engine.Current.WorldManager.FocusedWorld.RootSlot.AddSlot("UIXMLParserRoot");
-            if (string.IsNullOrEmpty(xml))
-            {
-                var errorSlot = slott.AddSlot("xmlError").AttachComponent<TextRenderer>();
-                errorSlot.Text.Value = $"XML Parsing failed beacause no text was provided";
-            }
-            var parser = new UIXMLParser();
-            var slot = parser.Parse(xml);
-            if (slot == null)
-            {
-                throw new InvalidOperationException("Failed to parse XML into a Slot.");
-            }
-            slot.Parent = slott;
-            return slot;
         }
     }
 }
