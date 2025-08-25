@@ -72,7 +72,7 @@
 	</ItemGroup>
 		<PropertyGroup>
 		<!-- Optional: Control copying to rml_libs -->
-		<CopyToLibs Condition="'$(CopyToLibs)'==''">true</CopyToLibs>
+		<CopyToLibs Condition="'$(CopyToLibs)'==''">false</CopyToLibs>
 	</PropertyGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(CopyToLibs)'=='true'">
 		<Message Text="Attempting to copy $(TargetFileName) to $(ResonitePath)rml_libs" Importance="high" />
